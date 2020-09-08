@@ -1,24 +1,9 @@
 #include "Wire.h"
+#include <ESP8266WiFi.h>
 
-#define RTC_ENABLED         0
-#define EC5_ENABLED         1
-
-#if EC5_ENABLED
-  #define EC5_PWR_PIN      16 //This is GPIO16(D0)
-  #define EC5_INPUT        A0
-  /**
-   * @brief Function reads raw voltage reading.
-   */
-  float ec5VoltageReading();
-  /**
-   * @brief Function converts rar voltage reading to volumetric water content(VWC) reading.
-   */
-  void ec5VWCReading();
-  /**
-   * @brief Function sends updates to Thingspeak
-   */
-  void sendUpdate();
-#endif// EC5_ENABLED
+#define RTC_ENABLED             0
+#define EC5_ENABLED             1
+#define THINGSPEAK_ENABLED      1
 #if RTC_ENABLED
   #define SET_RTC_TIME_ENABLED  0
   #define DS3231_I2C_ADDRESS    0x68
@@ -37,7 +22,22 @@
   #if SET_RTC_TIME_ENABLED
       void setDS3231time(int second, int minute, int hour, int dayOfWeek, int dayOfMonth, int month, int year);
   #endif //SET_RTC_TIME_ENABLED
-#endif //
+#endif // RTC_ENABLED
+#if EC5_ENABLED
+  #define EC5_PWR_PIN      16 //This is GPIO16(D0)
+  #define EC5_INPUT        A0
+  float ec5VoltageReading();
+  float ec5VWCReading();
+  void sendToThingSpeak();
+  void sendUpdate();
+#endif// EC5_ENABLED
+#if THINGSPEAK_ENABLED
+  String apiKey = "1IN9S15YEVW2VBZ5";       // Enter your Write API key from ThingSpeak
+
+  const char* ssid = "pcnet-386";           // Give your wifi network name
+  const char* password = "3rdbencher3c";   // Give your wifi network password
+  const char* server = "api.thingspeak.com";  
+#endif// THINGSPEAK_ENABLED
 
 void setup()
 {
@@ -69,17 +69,10 @@ void loop()
 }
 
 #if EC5_ENABLED
-  void ec5VWCReading()
-  {
-    float avg = ec5VoltageReading();  
-    /*      
-     * Using a 10 bit ADC, the formula used is:
-     *      VWC = 0.0014*(ADC output) - 0.4697
-     *      link: https://www.researchgate.net/publication/320668407_An_Arduino-Based_Wireless_Sensor_Network_for_Soil_Moisture_Monitoring_Using_Decagon_EC-5_Sensors
-     */
-    float vwcValue = 0.0014 * avg - 0.4697;
-    Serial.print("VWC Value: "); Serial.println(vwcValue);
-  }
+  /**
+   * @brief  Function reads raw voltage reading.
+   * @retVal avg: average value of 10 raw voltage readings from ec5 sensor.
+   */
   float ec5VoltageReading()
   {
     digitalWrite(EC5_PWR_PIN, HIGH);
@@ -101,7 +94,33 @@ void loop()
     Serial.print("avg: "); Serial.println(avg); 
     return avg;   
   }
+  /**
+   * @brief  Function converts rar voltage reading to volumetric water content(VWC) reading.
+   * @retVal vwcValue: calculated volumetric water content value.
+   */
+  float ec5VWCReading()
+  {
+    float avg = ec5VoltageReading();  
+    /*      
+     * Using a 10 bit ADC, the formula used is:
+     *      VWC = 0.0014*(ADC output) - 0.4697
+     *      link: https://www.researchgate.net/publication/320668407_An_Arduino-Based_Wireless_Sensor_Network_for_Soil_Moisture_Monitoring_Using_Decagon_EC-5_Sensors
+     */
+    float vwcValue = 0.0014 * avg - 0.4697;
+    Serial.print("VWC Value: "); Serial.println(vwcValue);
+    return vwcValue;
+  }
+  /**
+   * @brief  Function is called to send vwc values to ThingSpeak
+   */
+   void sendToThingSpeak()
+   {
+     float vwcTSVal = ec5VWCReading();
+   }
   #if RTC_ENABLED
+   /**
+     * @brief Sends data to ThingSpeak after 30 minute intervals
+     */
      void sendUpdate() //Sends an update to the farmer after every x(30) minutes
      {
        static int count = 0;
