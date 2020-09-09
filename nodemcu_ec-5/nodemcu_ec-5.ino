@@ -32,19 +32,21 @@
   void sendUpdate();
 #endif// EC5_ENABLED
 #if THINGSPEAK_ENABLED
-  String apiKey = "1IN9S15YEVW2VBZ5";       // Enter your Write API key from ThingSpeak
+  String apiKey = "630YC5WSN5IR3AGI";       // Enter your Write API key from ThingSpeak
 
-  const char* ssid = "pcnet-386";           // Give your wifi network name
-  const char* password = "3rdbencher3c";   // Give your wifi network password
+  const char* ssid = "ILLUMINUM_SAF";           // Give your wifi network name
+  const char* pass  = "GreenhousePlus+2020";   // Give your wifi network password
   const char* server = "api.thingspeak.com";  
+
+  WiFiClient client;
 #endif// THINGSPEAK_ENABLED
 
 void setup()
 {
   Serial.begin(115200);
-  Wire.begin(4,0);
-  Wire.setClock(400000L);   // set I2C clock to 400kHz
   #if SET_RTC_TIME_ENABLED
+  Wire.begin(4,0); //SDA &SCL pins respectively.
+  Wire.setClock(400000L);   // set I2C clock to 400kHz
     /*setDS3231time(int second, int minute, int hour, int dayOfWeek, int dayOfMonth, int month, int year(0-99))*/
     setDS3231time(28, 16, 16, 3, 8, 9, 20);
   #endif // SET_RTC_TIME_ENABLED
@@ -52,6 +54,21 @@ void setup()
     pinMode(EC5_PWR_PIN, OUTPUT);
     pinMode(EC5_INPUT, INPUT);
   #endif// EC5_ENABLED
+  #if THINGSPEAK_ENABLED
+     Serial.println("Connecting to ");
+     Serial.println(ssid);
+
+
+     WiFi.begin(ssid, pass);
+
+    while (WiFi.status() != WL_CONNECTED) 
+   {
+          delay(500);
+          Serial.print(".");
+   }
+    Serial.println("");
+    Serial.println("WiFi connected");  
+  #endif// THINGSPEAK_ENABLED
 }
 
 void loop()
@@ -110,13 +127,38 @@ void loop()
     Serial.print("VWC Value: "); Serial.println(vwcValue);
     return vwcValue;
   }
-  /**
-   * @brief  Function is called to send vwc values to ThingSpeak
-   */
-   void sendToThingSpeak()
-   {
-     float vwcTSVal = ec5VWCReading();
-   }
+  #if THINGSPEAK_ENABLED
+    /**
+     * @brief  Function is called to send vwc values to ThingSpeak
+     */
+     void sendToThingSpeak()
+     {
+       float vwcTSVal = ec5VWCReading();
+
+       if (client.connect(server,80))   //   "184.106.153.149" or api.thingspeak.com
+        {  
+           String postStr = apiKey;
+           postStr +="&field1=";
+           postStr += String(vwcTSVal);
+           postStr += "\r\n\r\n";
+
+           client.print("POST /update HTTP/1.1\n");
+           client.print("Host: api.thingspeak.com\n");
+           client.print("Connection: close\n");
+           client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
+           client.print("Content-Type: application/x-www-form-urlencoded\n");
+           client.print("Content-Length: ");
+           client.print(postStr.length());
+           client.print("\n\n");
+           client.print(postStr);
+          }
+          client.stop();
+ 
+          Serial.println("Waiting...");     
+          // thingspeak needs minimum 15 sec delay between updates
+          delay(1000);  
+     }
+   #endif// THINGSPEAK_ENABLED
   #if RTC_ENABLED
    /**
      * @brief Sends data to ThingSpeak after 30 minute intervals
@@ -131,7 +173,7 @@ void loop()
        int rem = minute % 30;
        if (rem == 0 && count == 0) 
        {
-         ec5VWCReading();
+         sendToThingSpeak();
          count++;
        }
        else if (rem > 0)
