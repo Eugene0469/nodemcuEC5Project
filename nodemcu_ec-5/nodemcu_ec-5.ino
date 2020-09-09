@@ -1,7 +1,7 @@
 #include "Wire.h"
 #include <ESP8266WiFi.h>
 
-#define RTC_ENABLED             0
+#define RTC_ENABLED             1
 #define EC5_ENABLED             1
 #define THINGSPEAK_ENABLED      1
 #if RTC_ENABLED
@@ -32,7 +32,7 @@
   void sendUpdate();
 #endif// EC5_ENABLED
 #if THINGSPEAK_ENABLED
-  #define THINGSPEAK_TEST         1
+  #define THINGSPEAK_TEST         0
   String apiKey = "630YC5WSN5IR3AGI";       // Enter your Write API key from ThingSpeak
 
   const char* ssid = "ILLUMINUM_SAF";           // Give your wifi network name
@@ -45,9 +45,11 @@
 void setup()
 {
   Serial.begin(115200);
+  #if RTC_ENABLED
+    Wire.begin(4,0); //SDA &SCL pins respectively.
+    Wire.setClock(400000L);   // set I2C clock to 400kHz
+  #endif// RTC_ENABLED
   #if SET_RTC_TIME_ENABLED
-  Wire.begin(4,0); //SDA &SCL pins respectively.
-  Wire.setClock(400000L);   // set I2C clock to 400kHz
     /*setDS3231time(int second, int minute, int hour, int dayOfWeek, int dayOfMonth, int month, int year(0-99))*/
     setDS3231time(28, 16, 16, 3, 8, 9, 20);
   #endif // SET_RTC_TIME_ENABLED
@@ -128,7 +130,7 @@ void loop()
      *      VWC = 0.0014*(ADC output) - 0.4697
      *      link: https://www.researchgate.net/publication/320668407_An_Arduino-Based_Wireless_Sensor_Network_for_Soil_Moisture_Monitoring_Using_Decagon_EC-5_Sensors
      */
-    float vwcValue = 0.0014 * avg - 0.4697;
+    float vwcValue = (0.0041 * avg) - 0.4895;
     Serial.print("VWC Value: "); Serial.println(vwcValue);
     return vwcValue;
   }
@@ -139,12 +141,15 @@ void loop()
      void sendToThingSpeak()
      {
        float vwcTSVal = ec5VWCReading();
+       float voltAvg = ec5VoltageReading();
 
        if (client.connect(server,80))   //   "184.106.153.149" or api.thingspeak.com
         {  
            String postStr = apiKey;
            postStr +="&field1=";
            postStr += String(vwcTSVal);
+           postStr +="&field2=";
+           postStr += String(voltAvg);
            postStr += "\r\n\r\n";
 
            client.print("POST /update HTTP/1.1\n");
@@ -166,7 +171,7 @@ void loop()
    #endif// THINGSPEAK_ENABLED
   #if RTC_ENABLED
    /**
-     * @brief Sends data to ThingSpeak after 30 minute intervals
+     * @brief Sends data to ThingSpeak after 5 minute intervals
      */
      void sendUpdate() //Sends an update to the farmer after every x(30) minutes
      {
@@ -175,7 +180,7 @@ void loop()
        int second, minute, hour, dayOfWeek, day, month, year;
        // retrieve data from DS3231
        readDS3231time(&second, &minute, &hour, &dayOfWeek, &day, &month, &year);
-       int rem = minute % 30;
+       int rem = minute % 5;
        if (rem == 0 && count == 0) 
        {
          sendToThingSpeak();
