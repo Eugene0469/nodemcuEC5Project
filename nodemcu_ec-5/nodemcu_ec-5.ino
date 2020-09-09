@@ -33,10 +33,10 @@
 #endif// EC5_ENABLED
 #if THINGSPEAK_ENABLED
   #define THINGSPEAK_TEST         0
-  String apiKey = "630YC5WSN5IR3AGI";       // Enter your Write API key from ThingSpeak
+  String apiKey = "apiKey";       // Enter your Write API key from ThingSpeak
 
-  const char* ssid = "ILLUMINUM_SAF";           // Give your wifi network name
-  const char* pass  = "GreenhousePlus+2020";   // Give your wifi network password
+  const char* ssid = "ssid";           // Give your wifi network name
+  const char* pass  = "password";   // Give your wifi network password
   const char* server = "api.thingspeak.com";  
 
   WiFiClient client;
@@ -61,14 +61,13 @@ void setup()
      Serial.println("Connecting to ");
      Serial.println(ssid);
 
-
      WiFi.begin(ssid, pass);
 
     while (WiFi.status() != WL_CONNECTED) 
-   {
-          delay(500);
-          Serial.print(".");
-   }
+     {
+            delay(500);
+            Serial.print(".");
+     }
     Serial.println("");
     Serial.println("WiFi connected");  
   #endif// THINGSPEAK_ENABLED
