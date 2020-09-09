@@ -32,6 +32,7 @@
   void sendUpdate();
 #endif// EC5_ENABLED
 #if THINGSPEAK_ENABLED
+  #define THINGSPEAK_TEST         1
   String apiKey = "630YC5WSN5IR3AGI";       // Enter your Write API key from ThingSpeak
 
   const char* ssid = "ILLUMINUM_SAF";           // Give your wifi network name
@@ -75,6 +76,10 @@ void loop()
 {
   #if EC5_ENABLED
       ec5VoltageReading();
+      #if THINGSPEAK_TEST
+          sendToThingSpeak();
+          delay(15000);
+      #endif// THINGSPEAK_TEST
       #if RTC_ENABLED
           sendUpdate();
       #endif //RTC_ENABLED
