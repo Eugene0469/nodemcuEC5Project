@@ -79,7 +79,7 @@ void loop()
       ec5VoltageReading();
       #if THINGSPEAK_TEST
           sendToThingSpeak();
-          delay(15000);
+          delay(30000);
       #endif// THINGSPEAK_TEST
       #if RTC_ENABLED
           sendUpdate();
@@ -103,7 +103,7 @@ void loop()
     float avg;
     for(int i=0; i<10;i++)
     {
-        delay(30000);
+        delay(15000);
         array[i] = analogRead(EC5_INPUT);    
     }
     digitalWrite(EC5_PWR_PIN, LOW);
