@@ -1,7 +1,7 @@
 #include "Wire.h"
 #include <ESP8266WiFi.h>
 
-#define RTC_ENABLED             1
+#define RTC_ENABLED             0
 #define EC5_ENABLED             1
 #define THINGSPEAK_ENABLED      1
 #if RTC_ENABLED
@@ -32,7 +32,7 @@
   void sendUpdate();
 #endif// EC5_ENABLED
 #if THINGSPEAK_ENABLED
-  #define THINGSPEAK_TEST         0
+  #define THINGSPEAK_TEST         1
   String apiKey = "apiKey";       // Enter your Write API key from ThingSpeak
 
   const char* ssid = "ssid";           // Give your wifi network name
@@ -103,7 +103,7 @@ void loop()
     float avg;
     for(int i=0; i<10;i++)
     {
-        delayMicroseconds(15000);
+        delay(30000);
         array[i] = analogRead(EC5_INPUT);    
     }
     digitalWrite(EC5_PWR_PIN, LOW);
