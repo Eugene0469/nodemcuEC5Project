@@ -103,7 +103,7 @@ void loop()
     float avg;
     for(int i=0; i<10;i++)
     {
-        delay(15000);
+        delayMicroseconds(15000);
         array[i] = analogRead(EC5_INPUT);    
     }
     digitalWrite(EC5_PWR_PIN, LOW);
