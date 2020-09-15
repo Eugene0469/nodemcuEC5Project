@@ -7,6 +7,7 @@
 #if RTC_ENABLED
   #define SET_RTC_TIME_ENABLED  0
   #define DS3231_I2C_ADDRESS    0x68
+  #define UPDATE_INTERVAL       5
   // Convert normal decimal numbers to binary coded decimal
   byte decToBcd(int val)
   {
@@ -33,10 +34,10 @@
 #endif// EC5_ENABLED
 #if THINGSPEAK_ENABLED
   #define THINGSPEAK_TEST         0
-  String apiKey = "0AM15G1EUJ1QM9K8";       // Enter your Write API key from ThingSpeak
+  String apiKey = "apiKey";       // Enter your Write API key from ThingSpeak
 
-  const char* ssid = "ILLUMINUM_SAF";           // Give your wifi network name
-  const char* pass  = "GreenhousePlus+2020";   // Give your wifi network password
+  const char* ssid = "ssid";           // Give your wifi network name
+  const char* pass  = "password";   // Give your wifi network password
   const char* server = "api.thingspeak.com";  
 
   WiFiClient client;
@@ -46,7 +47,7 @@ void setup()
 {
   Serial.begin(115200);
   #if RTC_ENABLED
-    Wire.begin(4,5); //SDA &SCL pins respectively. // Change to (4,0)
+    Wire.begin(4,0); //SDA &SCL pins respectively. // Change to (4,5) for esp8266
     Wire.setClock(400000L);   // set I2C clock to 400kHz
   #endif// RTC_ENABLED
   #if SET_RTC_TIME_ENABLED
@@ -129,8 +130,8 @@ void loop()
      *      VWC = 0.0014*(ADC output) - 0.4697
      *      link: https://www.researchgate.net/publication/320668407_An_Arduino-Based_Wireless_Sensor_Network_for_Soil_Moisture_Monitoring_Using_Decagon_EC-5_Sensors
      */
-//    float vwcValue = (0.0041 * avg) - 0.4895;
-    float vwcValue = (0.0019 * avg)-0.4697 ;
+    float vwcValue = (0.0041 * avg) - 0.4895;
+//    float vwcValue = (0.0019 * avg)-0.4697 ;
     Serial.print("VWC Value: "); Serial.println(vwcValue);
     return vwcValue;
   }
@@ -150,9 +151,9 @@ void loop()
            postStr +="&field1=";
            postStr += String(vwcTSVal);
            postStr +="&field2=";
-           postStr += String(voltAvg);
-           postStr +="&field3=";
            postStr += String(rawValAvg);
+           postStr +="&field3=";
+           postStr += String(voltAvg);
            postStr += "\r\n\r\n";
 
            client.print("POST /update HTTP/1.1\n");
@@ -183,7 +184,7 @@ void loop()
        int second, minute, hour, dayOfWeek, day, month, year;
        // retrieve data from DS3231
        readDS3231time(&second, &minute, &hour, &dayOfWeek, &day, &month, &year);
-       int rem = minute % 5;
+       int rem = minute % UPDATE_INTERVAL;
        if (rem == 0 && count == 0) 
        {
          sendToThingSpeak();
