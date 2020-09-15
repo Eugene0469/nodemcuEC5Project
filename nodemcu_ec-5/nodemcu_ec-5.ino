@@ -33,10 +33,10 @@
 #endif// EC5_ENABLED
 #if THINGSPEAK_ENABLED
   #define THINGSPEAK_TEST         0
-  String apiKey = "apiKey";       // Enter your Write API key from ThingSpeak
+  String apiKey = "0AM15G1EUJ1QM9K8";       // Enter your Write API key from ThingSpeak
 
-  const char* ssid = "ssid";           // Give your wifi network name
-  const char* pass  = "password";   // Give your wifi network password
+  const char* ssid = "ILLUMINUM_SAF";           // Give your wifi network name
+  const char* pass  = "GreenhousePlus+2020";   // Give your wifi network password
   const char* server = "api.thingspeak.com";  
 
   WiFiClient client;
@@ -46,7 +46,7 @@ void setup()
 {
   Serial.begin(115200);
   #if RTC_ENABLED
-    Wire.begin(4,0); //SDA &SCL pins respectively.
+    Wire.begin(4,5); //SDA &SCL pins respectively. // Change to (4,0)
     Wire.setClock(400000L);   // set I2C clock to 400kHz
   #endif// RTC_ENABLED
   #if SET_RTC_TIME_ENABLED
@@ -129,7 +129,8 @@ void loop()
      *      VWC = 0.0014*(ADC output) - 0.4697
      *      link: https://www.researchgate.net/publication/320668407_An_Arduino-Based_Wireless_Sensor_Network_for_Soil_Moisture_Monitoring_Using_Decagon_EC-5_Sensors
      */
-    float vwcValue = (0.0041 * avg) - 0.4895;
+//    float vwcValue = (0.0041 * avg) - 0.4895;
+    float vwcValue = (0.0019 * avg)-0.4697 ;
     Serial.print("VWC Value: "); Serial.println(vwcValue);
     return vwcValue;
   }
@@ -140,7 +141,8 @@ void loop()
      void sendToThingSpeak()
      {
        float vwcTSVal = ec5VWCReading();
-       float voltAvg = ec5VoltageReading();
+       float rawValAvg = ec5VoltageReading();
+       float voltAvg =  ec5VoltageReading()* (3.3 / 1023.0); 
 
        if (client.connect(server,80))   //   "184.106.153.149" or api.thingspeak.com
         {  
@@ -149,6 +151,8 @@ void loop()
            postStr += String(vwcTSVal);
            postStr +="&field2=";
            postStr += String(voltAvg);
+           postStr +="&field3=";
+           postStr += String(rawValAvg);
            postStr += "\r\n\r\n";
 
            client.print("POST /update HTTP/1.1\n");
